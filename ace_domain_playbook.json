@@ -1,19 +1,19 @@
 {
   "bullets": {
-    "domain_availability_check-00001": {
-      "id": "domain_availability_check-00001",
-      "section": "domain_availability_check",
-      "content": "To efficiently check domain availability, prioritize using a domain registrar's API, such as GoDaddy's, to automate domain checks. Send a GET request to 'https://api.godaddy.com/v1/domains/available?domain=yourdomain.com'. Ensure API access tokens are pre-configured and securely stored. Streamline token retrieval by caching tokens or using environment variables to minimize steps. Optimize response parsing by directly extracting availability status from the response JSON. Aim to complete the process in 8 steps or fewer by consolidating actions. This approach minimizes manual steps and avoids potential CAPTCHAs encountered on websites, thus enhancing efficiency. Implement retry logic with exponential backoff to handle network issues and API rate limits effectively. Consider using alternative APIs if persistent issues occur with the primary one. Always verify API credentials and check for any rate limiting policies.",
-      "helpful": 37,
+    "domain_check-00001": {
+      "id": "domain_check-00001",
+      "section": "domain_check",
+      "content": "When checking domain availability, implement a timeout mechanism to handle potential delays. If a timeout occurs, attempt to switch to an alternative domain lookup service to ensure reliability. Example: Start with Service A, set a 5-second timeout; if Service A times out, switch to Service B. To improve reliability, test multiple services in advance to determine which is most responsive, and consider adjusting timeout settings based on service performance.",
+      "helpful": 1,
       "harmful": 0,
-      "neutral": 0,
-      "created_at": "2025-10-26T00:04:01.012836+00:00",
-      "updated_at": "2025-10-26T00:32:57.749980+00:00"
+      "neutral": 1,
+      "created_at": "2025-10-27T16:57:12.623197+00:00",
+      "updated_at": "2025-10-27T16:59:10.266934+00:00"
     }
   },
   "sections": {
-    "domain_availability_check": [
-      "domain_availability_check-00001"
+    "domain_check": [
+      "domain_check-00001"
     ]
   },
   "next_id": 1

@@ -42,9 +42,10 @@ client = opik.Opik()
 class DomainCheckEnvironment(TaskEnvironment):
     """Environment that evaluates domain checking performance."""
 
-    def __init__(self, headless: bool = True, model: str = "gpt-4o"):
+    def __init__(self, headless: bool = True, model: str = "gpt-4o", run_start_time = None):
         self.headless = headless
         self.model = model
+        self.run_start_time = run_start_time
 
     def evaluate(self, sample: Sample, generator_output):
         """Run browser automation and evaluate the result."""
@@ -75,19 +76,9 @@ class DomainCheckEnvironment(TaskEnvironment):
         # Run browser automation
         result = asyncio.run(self._check_domain(domain, strategy))
 
-        # Wait for traces to be indexed in Opik before querying
-        print(f"   ⏳ Waiting 5 seconds for traces to be indexed...")
-        import time
-        time.sleep(5)
-
-        # Query Opik for actual token usage and costs
-        print(f"   💰 Querying token usage for trace: {trace_id[:8] if trace_id else 'None'}...")
-        (ace_tokens, generator_tokens, reflector_tokens, curator_tokens) = self._get_token_usage(trace_id)
-
         # Get browser-use tokens from result (if available)
         browseruse_tokens = result.get('browseruse_tokens', 0)
-        print(f"   📊 Token results: Agent={browseruse_tokens}, ACE={ace_tokens}")
-        print(f"   🎯 Role tokens: Gen={generator_tokens}, Ref={reflector_tokens}, Cur={curator_tokens}")
+        print(f"   📊 Browser tokens: {browseruse_tokens}")
 
         # Evaluate correctness and efficiency
         status_success = result['status'] != "ERROR"
@@ -126,11 +117,7 @@ class DomainCheckEnvironment(TaskEnvironment):
                 "expected": expected_status,
                 "attempt": result.get('attempt', 1),
                 "attempt_details": result.get('attempt_details', []),
-                "browseruse_tokens": browseruse_tokens,
-                "ace_tokens": ace_tokens,
-                "generator_tokens": generator_tokens,
-                "reflector_tokens": reflector_tokens,
-                "curator_tokens": curator_tokens
+                "browseruse_tokens": browseruse_tokens
             }
         )
 
@@ -151,10 +138,14 @@ class DomainCheckEnvironment(TaskEnvironment):
             # Based on Claude research: Use search_traces() instead of search_spans()
             print(f"   📋 Using search_traces() method as recommended by Claude research...")
 
-            # Get recent traces (last 2 minutes to be more precise) from both potential projects
-            now = datetime.datetime.now(datetime.timezone.utc)
-            recent_time = (now - datetime.timedelta(minutes=2)).isoformat().replace('+00:00', 'Z')
-            print(f"   🕐 Searching for traces since: {recent_time}")
+            # Use run start time if available, otherwise fall back to last 10 minutes
+            if self.run_start_time:
+                recent_time = self.run_start_time.isoformat().replace('+00:00', 'Z')
+                print(f"   🕐 Searching for traces since run start: {recent_time}")
+            else:
+                now = datetime.datetime.now(datetime.timezone.utc)
+                recent_time = (now - datetime.timedelta(minutes=10)).isoformat().replace('+00:00', 'Z')
+                print(f"   🕐 Searching for traces since: {recent_time} (fallback: last 10 minutes)")
 
             all_traces = []
 
@@ -170,6 +161,9 @@ class DomainCheckEnvironment(TaskEnvironment):
                     all_traces.extend(traces)
                 except Exception as e:
                     print(f"   ⚠️ Failed to search '{project}' project: {e}")
+
+            # Debug: Show all trace names
+            print(f"      🔍 All trace names: {[getattr(t, 'name', 'unknown') for t in all_traces]}")
 
             # Track individual ACE role tokens
             generator_tokens = 0
@@ -191,6 +185,9 @@ class DomainCheckEnvironment(TaskEnvironment):
 
                     # Get usage from trace or spans
                     total_tokens = 0
+
+                    # Debug: Check trace.usage structure
+                    print(f"         🔍 trace.usage type: {type(getattr(trace, 'usage', None))}, value: {getattr(trace, 'usage', None)}")
 
                     if trace.usage:
                         total_tokens = trace.usage.get('total_tokens', 0)
@@ -244,7 +241,7 @@ class DomainCheckEnvironment(TaskEnvironment):
 
     async def _check_domain(self, domain: str, strategy: str):
         """Execute browser automation to check domain with retry logic."""
-        max_retries = 3
+        max_retries = 2
         last_error = None
         total_steps = 0
         attempt_details = []
@@ -292,7 +289,7 @@ ERROR: <reason>
 
                 print(f"   🚀 Running agent (timeout: 180s)...")
                 # Run with reasonable timeout to allow LLM calls to complete
-                history = await asyncio.wait_for(agent.run(), timeout=180.0)
+                history = await asyncio.wait_for(agent.run(), timeout=50.0)
                 print(f"   📋 Agent completed, processing results...")
 
                 # Parse result
@@ -425,7 +422,7 @@ def get_test_domains() -> List[str]:
     """Get list of test domains to check."""
     return [
         "testdomain123456.com",
-        #"myuniquedomain789.net",
+        "myuniquedomain789.net",
         #"brandnewstartup2024.io",
         #"innovativetech555.org",
         #"creativesolutions999.co",
@@ -439,6 +436,10 @@ def get_test_domains() -> List[str]:
 
 def main():
     """Main function - ACE online learning for domain checking."""
+
+    # Capture start time for trace filtering
+    import datetime
+    run_start_time = datetime.datetime.now(datetime.timezone.utc)
 
     # Configure Opik if available
     try:
@@ -474,7 +475,8 @@ def main():
     # Create environment
     environment = DomainCheckEnvironment(
         headless=True,  # Using headless mode for better stability
-        model="gpt-4o"
+        model="gpt-4o",
+        run_start_time=run_start_time  # Pass start time for trace filtering
     )
 
     print("\n🔄 Starting incremental ACE learning...\n")
@@ -492,12 +494,18 @@ def main():
     print(f"\n📋 Processing {len(domains)} domains...")
     results = adapter.run(samples, environment)
 
+    # Query ACE tokens after all roles have completed
+    print(f"\n💰 Querying ACE token usage after all domains processed...")
+    import time
+    time.sleep(5)  # Wait for Opik to index final traces
+    (total_ace_tokens, total_generator_tokens, total_reflector_tokens, total_curator_tokens) = environment._get_token_usage()
+
     # Show results
     print("\n" + "=" * 80)
     print("📊 RESULTS")
     print("=" * 80)
-    print(f"{'#':<3} {'Domain':<25} {'Status':<10} {'Acc':<4} {'Steps':<8} {'Browser-Tokens':<13} {'ACE-Tokens':<11} {'Details'}")
-    print("-" * 103)
+    print(f"{'#':<3} {'Domain':<25} {'Status':<10} {'Acc':<4} {'Steps':<8} {'Browser-Tokens':<13} {'Details'}")
+    print("-" * 85)
 
     for i, (domain, result) in enumerate(zip(domains, results), 1):
         metrics = result.environment_result.metrics
@@ -516,9 +524,8 @@ def main():
 
         accuracy_indicator = '✓' if correct else '✗'
         browseruse_tokens = metrics.get('browseruse_tokens', 0)
-        ace_tokens = metrics.get('ace_tokens', 0)
 
-        print(f"{i:<3} {domain:<25} {status:<10} {accuracy_indicator:<4} {total_steps:<8} {browseruse_tokens:<12} {ace_tokens:<11} {step_details}")
+        print(f"{i:<3} {domain:<25} {status:<10} {accuracy_indicator:<4} {total_steps:<8} {browseruse_tokens:<12} {step_details}")
 
     # Enhanced Summary
     status_successful = sum(1 for r in results if r.environment_result.metrics.get('status_success', False))
@@ -531,12 +538,7 @@ def main():
 
     # Calculate actual token usage from results
     total_browseruse_tokens = sum(r.environment_result.metrics.get('browseruse_tokens', 0) for r in results)
-    total_ace_tokens = sum(r.environment_result.metrics.get('ace_tokens', 0) for r in results)
-
-    # Individual role totals
-    total_generator_tokens = sum(r.environment_result.metrics.get('generator_tokens', 0) for r in results)
-    total_reflector_tokens = sum(r.environment_result.metrics.get('reflector_tokens', 0) for r in results)
-    total_curator_tokens = sum(r.environment_result.metrics.get('curator_tokens', 0) for r in results)
+    # ACE tokens already queried above
 
     # Calculate averages
     avg_browseruse_tokens_per_domain = total_browseruse_tokens / len(results) if results else 0.0
