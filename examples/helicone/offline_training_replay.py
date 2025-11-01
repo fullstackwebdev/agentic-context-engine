@@ -45,6 +45,7 @@ from ace import (
     Playbook,
     LiteLLMClient,
 )
+from ace.prompts_v2 import PromptManager
 from helicone_loader import HeliconeLoader
 
 # Load environment variables
@@ -224,18 +225,21 @@ def main():
     # 4. Create ACE components
     print(f"🧠 Initializing ACE components...")
     print(f"   Generator: ReplayGenerator (uses historical data)")
-    print(f"   Reflector: {MODEL}")
-    print(f"   Curator: {MODEL}\n")
+    print(f"   Reflector: {MODEL} (with v2 prompts)")
+    print(f"   Curator: {MODEL} (with v2 prompts)\n")
 
     # Create LLM client for Reflector and Curator
     llm = LiteLLMClient(model=MODEL, temperature=0.7)
 
-    # Create ACE adapter with ReplayGenerator
+    # Create prompt manager for v2 prompts
+    prompt_manager = PromptManager(default_version="2.0")
+
+    # Create ACE adapter with ReplayGenerator and v2 prompts
     adapter = OfflineAdapter(
         playbook=Playbook(),
         generator=ReplayGenerator(response_mapping),
-        reflector=Reflector(llm),
-        curator=Curator(llm),
+        reflector=Reflector(llm, prompt_template=prompt_manager.get_reflector_prompt()),
+        curator=Curator(llm, prompt_template=prompt_manager.get_curator_prompt()),
     )
 
     # 5. Create environment
