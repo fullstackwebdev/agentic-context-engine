@@ -14,13 +14,23 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from browser_use import Agent, Browser, ChatAnthropic
+
+# Import common utilities from parent directory
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from common import (
     calculate_timeout_steps,
-    get_test_domains,
-    parse_domain_checker_output,
     format_result_output,
     MAX_RETRIES,
-    DEFAULT_TIMEOUT_SECONDS,
+    DEFAULT_TIMEOUT_SECONDS
+)
+from utils import print_history_details
+
+# Import domain-specific utilities from local module
+from domain_utils import (
+    get_test_domains,
+    parse_domain_checker_output,
     DOMAIN_CHECKER_TEMPLATE
 )
 
@@ -64,6 +74,9 @@ async def check_domain(domain: str, model: str = "claude-sonnet-4-5-20250929", h
 
             # Run with timeout
             history = await asyncio.wait_for(agent.run(), timeout=180.0)
+
+            # Debug: Print detailed history information
+            print_history_details(history)
 
             # Parse result (back to original working logic)
             output = history.final_result() if hasattr(history, "final_result") else ""

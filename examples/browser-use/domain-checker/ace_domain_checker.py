@@ -17,15 +17,21 @@ load_dotenv()
 from ace.prompts_v2_1 import PromptManager
 from browser_use import Agent, Browser, ChatAnthropic
 
-# Import common utilities
+# Import common utilities from parent directory
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from common import (
     calculate_timeout_steps,
-    parse_domain_checker_output,
     format_result_output,
     save_results_to_file,
     MAX_RETRIES,
     DEFAULT_TIMEOUT_SECONDS
 )
+from utils import print_history_details
+
+# Import domain-specific utilities from local module
+from domain_utils import parse_domain_checker_output, get_test_domains
 
 
 from ace import (
@@ -305,6 +311,9 @@ ERROR: <reason>
                 history = await asyncio.wait_for(agent.run(), timeout=180.0)
                 print(f"   📋 Agent completed, processing results...")
 
+                # Debug: Print detailed history information
+                print_history_details(history)
+
                 # Parse result
                 output = history.final_result() if hasattr(history, "final_result") else ""
                 steps = len(history.action_names()) if hasattr(history, "action_names") and history.action_names() else 0
@@ -501,22 +510,6 @@ ERROR: <reason>
             "browseruse_tokens": total_browseruse_tokens,
             "execution_logs": execution_logs if 'execution_logs' in locals() else []
         }
-
-
-def get_test_domains() -> List[str]:
-    """Get list of test domains to check."""
-    return [
-        "testdomain123456.com",
-        "myuniquedomain789.net",
-        "brandnewstartup2024.io",
-        "innovativetech555.org",
-        "creativesolutions999.co",
-        "digitalagency2024.biz",
-        "techstartup123.app",
-        "newcompany456.info",
-        "uniquebusiness789.online",
-        "moderntech2024.dev"
-    ]
 
 
 def main():

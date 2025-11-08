@@ -201,5 +201,17 @@ def print_history_details(history):
         print(f"  Total Duration: {duration} seconds" if duration is not None else "  Total Duration: N/A")
     except Exception as e:
         print(f"  Total Duration Error: {e}")
-    
+
+    try:
+        structured_output = history.structured_output if hasattr(history, "structured_output") else None
+        print("\n📋 STRUCTURED OUTPUT:")
+        print("-" * 80)
+        if structured_output is not None:
+            output_str = str(structured_output)[:200] + "..." if len(str(structured_output)) > 200 else str(structured_output)
+            print(f"  {output_str}")
+        else:
+            print("  (no structured output)")
+    except Exception as e:
+        print(f"  Structured Output Error: {e}")
+
     print("\n" + "=" * 80 + "\n")

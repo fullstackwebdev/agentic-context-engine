@@ -11,8 +11,13 @@ from typing import List, Dict
 from dotenv import load_dotenv
 
 from browser_use import Agent, Browser, ChatOpenAI
+from pathlib import Path
 
 load_dotenv()
+
+# Import utils from parent directory
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from utils import print_history_details
 

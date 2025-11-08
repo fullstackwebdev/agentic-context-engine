@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Smart Form Filler Demo</title>
+    <title>Sign Up Form Demo</title>
     <style>
       :root {
         color-scheme: light dark;
@@ -12,59 +12,62 @@
 
       body {
         margin: 0;
-        padding: 2rem;
+        padding: 1.25rem;
         display: flex;
         justify-content: center;
-        align-items: flex-start;
+        align-items: center;
         background: linear-gradient(135deg, #f7fafc 0%, #e3ecf8 100%);
         min-height: 100vh;
+        box-sizing: border-box;
       }
 
       .card {
         background: #ffffff;
         border-radius: 16px;
         box-shadow: 0 18px 35px rgba(15, 23, 42, 0.15);
-        width: min(640px, 100%);
-        padding: 32px 36px 40px;
+        width: min(560px, 100%);
+        padding: 24px 28px 28px;
         box-sizing: border-box;
       }
 
       h1 {
-        margin: 0 0 1.5rem;
-        font-size: 1.85rem;
+        margin: 0 0 0.75rem;
+        font-size: 1.65rem;
         color: #1e293b;
       }
 
       p.description {
-        margin: 0 0 2rem;
+        margin: 0 0 1.25rem;
         color: #475569;
-        line-height: 1.6;
+        line-height: 1.5;
+        font-size: 0.9rem;
       }
 
       form {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        gap: 1.5rem 1.75rem;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem 1.25rem;
       }
 
       .field {
         display: flex;
         flex-direction: column;
-        gap: 0.45rem;
+        gap: 0.35rem;
       }
 
       label {
         font-weight: 600;
         color: #0f172a;
-        font-size: 0.95rem;
+        font-size: 0.875rem;
       }
 
       input,
       select {
         border: 1px solid rgba(148, 163, 184, 0.5);
-        border-radius: 10px;
-        padding: 0.75rem 0.9rem;
-        font-size: 1rem;
+        border-radius: 8px;
+        padding: 0.6rem 0.75rem;
+        font-size: 0.95rem;
+        color: #1e293b;
         transition: border-color 0.2s ease, box-shadow 0.2s ease;
         background-color: #f8fafc;
       }
@@ -100,14 +103,14 @@
       }
 
       button[type="submit"] {
-        margin-top: 1.5rem;
+        margin-top: 0.75rem;
         grid-column: 1 / -1;
         background: linear-gradient(135deg, #2563eb, #1d4ed8);
         color: #fff;
         border: none;
-        border-radius: 999px;
-        padding: 0.9rem 1.6rem;
-        font-size: 1.05rem;
+        border-radius: 8px;
+        padding: 0.75rem 1.4rem;
+        font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
         transition: transform 0.15s ease, box-shadow 0.2s ease;
@@ -119,19 +122,25 @@
       }
 
       .status-area {
-        margin-top: 2rem;
-        padding: 1rem 1.25rem;
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
         background: #f5f9ff;
-        border-radius: 12px;
+        border-radius: 8px;
         border: 1px solid rgba(59, 130, 246, 0.2);
         color: #1e3a8a;
         font-weight: 500;
+        font-size: 0.875rem;
       }
 
       .status-area.success {
         background: #ecfdf5;
         border-color: rgba(16, 185, 129, 0.3);
         color: #047857;
+        margin-top: 0;
+        padding: 2rem 2.5rem;
+        font-size: 1.25rem;
+        text-align: center;
+        font-weight: 600;
       }
 
       .status-area.error {
@@ -139,18 +148,18 @@
         border-color: rgba(248, 113, 113, 0.3);
         color: #b91c1c;
       }
+
+      .hidden {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
     <article class="card">
-      <h1>Shipping Details</h1>
-      <p class="description">
-        This demo form powers the Smart Form Filler project. Submitting with
-        incorrect formats will surface precise validation messages so the
-        Agentic Context Engine can learn how to normalize data.
-      </p>
+      <h1>Welcome to ACE!</h1>
+      <p class="description">Sign up and get started.</p>
 
-      <form id="shipping-form" novalidate>
+      <form id="signup-form" novalidate>
         <div class="field">
           <label for="first_name">First Name</label>
           <input
@@ -187,106 +196,19 @@
           <span class="error-message" data-field="email"></span>
         </div>
 
-        <div class="field">
-          <label for="phone">Phone (9 digits)</label>
-          <input
-            id="phone"
-            name="phone"
-            type="text"
-            placeholder="600123456"
-            inputmode="numeric"
-            maxlength="12"
-            required
-          />
-          <span class="error-message" data-field="phone"></span>
-        </div>
-
-        <div class="field">
-          <label for="ship_date">Desired Ship Date (MM/DD/YYYY)</label>
-          <input
-            id="ship_date"
-            name="ship_date"
-            type="text"
-            placeholder="08/12/1998"
-            required
-          />
-          <span class="error-message" data-field="ship_date"></span>
-        </div>
-
         <div class="field full-width">
-          <label for="address1">Address Line 1</label>
+          <label for="password">Password</label>
           <input
-            id="address1"
-            name="address1"
-            type="text"
-            placeholder="123 Main Street"
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Enter a secure password"
             required
           />
-          <span class="error-message" data-field="address1"></span>
+          <span class="error-message" data-field="password"></span>
         </div>
 
-        <div class="field full-width">
-          <label for="address2">Address Line 2 (optional)</label>
-          <input
-            id="address2"
-            name="address2"
-            type="text"
-            placeholder="Apartment, suite, etc."
-          />
-          <span class="error-message" data-field="address2"></span>
-        </div>
-
-        <div class="field">
-          <label for="city">City</label>
-          <input
-            id="city"
-            name="city"
-            type="text"
-            placeholder="Bilbao"
-            required
-          />
-          <span class="error-message" data-field="city"></span>
-        </div>
-
-        <div class="field">
-          <label for="state_region">State / Province</label>
-          <input
-            id="state_region"
-            name="state_region"
-            type="text"
-            placeholder="Biscay"
-            required
-          />
-          <span class="error-message" data-field="state_region"></span>
-        </div>
-
-        <div class="field">
-          <label for="zip_postal">Postal Code (5 digits)</label>
-          <input
-            id="zip_postal"
-            name="zip_postal"
-            type="text"
-            placeholder="48001"
-            inputmode="numeric"
-            maxlength="10"
-            required
-          />
-          <span class="error-message" data-field="zip_postal"></span>
-        </div>
-
-        <div class="field">
-          <label for="country">Country</label>
-          <select id="country" name="country" required>
-            <option value="">Select a country</option>
-            <option value="Spain">Spain</option>
-            <option value="United States">United States</option>
-            <option value="France">France</option>
-            <option value="Germany">Germany</option>
-          </select>
-          <span class="error-message" data-field="country"></span>
-        </div>
-
-        <button id="submit" type="submit">Submit Order</button>
+        <button id="submit" type="submit">Create Account</button>
       </form>
 
       <section id="status" class="status-area" aria-live="polite">
@@ -295,39 +217,46 @@
     </article>
 
     <script>
-      const form = document.getElementById("shipping-form");
+      const form = document.getElementById("signup-form");
       const statusArea = document.getElementById("status");
       const errorMessages = Array.from(
         document.querySelectorAll(".error-message")
       );
 
-      const FORM_RULES = {
-        ship_date: {
-          pattern: /^\d{2}\/\d{2}\/\d{4}$/,
-          message: "Date must be in MM/DD/YYYY format, e.g., 08/12/1998",
-        },
-        phone: {
-          pattern: /^\d{9}$/,
-          message: "Phone number must be exactly 9 digits (digits only).",
-        },
-        zip_postal: {
-          pattern: /^\d{5}$/,
-          message: "Postal code must be 5 digits (digits only).",
-        },
-      };
+      function validatePassword(password) {
+        const errors = [];
 
-      const REQUIRED_FIELDS = [
-        "first_name",
-        "last_name",
-        "email",
-        "phone",
-        "ship_date",
-        "address1",
-        "city",
-        "state_region",
-        "zip_postal",
-        "country",
-      ];
+        // Rule 1: More than 12 characters (at least 13)
+        if (password.length <= 12) {
+          errors.push("Password must be more than 12 characters long.");
+        }
+
+        // Rule 2: Must contain at least one uppercase letter
+        if (!/[A-Z]/.test(password)) {
+          errors.push("Password must contain at least one uppercase letter.");
+        }
+
+        // Rule 3: Must contain at least one lowercase letter
+        if (!/[a-z]/.test(password)) {
+          errors.push("Password must contain at least one lowercase letter.");
+        }
+
+        // Rule 4: Must contain at least one number
+        if (!/\d/.test(password)) {
+          errors.push("Password must contain at least one number.");
+        }
+
+        // Rule 5: Must contain at least one special character
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+          errors.push(
+            "Password must contain at least one special character (!@#$%^&* etc.)."
+          );
+        }
+
+        return errors;
+      }
+
+      const REQUIRED_FIELDS = ["first_name", "last_name", "email", "password"];
 
       window.__FORM_STATE__ = {
         submitted: false,
@@ -374,6 +303,11 @@
         statusArea.textContent = message;
         statusArea.classList.remove("error");
         statusArea.classList.add("success");
+
+        // Hide form and header elements
+        document.querySelector("h1").classList.add("hidden");
+        document.querySelector("p.description").classList.add("hidden");
+        form.classList.add("hidden");
       }
 
       function markFailure(message) {
@@ -394,6 +328,7 @@
 
         let hasError = false;
 
+        // Check required fields
         for (const field of REQUIRED_FIELDS) {
           const element = form.elements.namedItem(field);
           if (!element) continue;
@@ -404,12 +339,23 @@
           }
         }
 
-        for (const [field, rule] of Object.entries(FORM_RULES)) {
-          const element = form.elements.namedItem(field);
-          if (!(element instanceof HTMLInputElement)) continue;
-          const value = element.value.trim();
-          if (value && !rule.pattern.test(value)) {
-            registerError(field, rule.message);
+        // Validate email format
+        const emailElement = form.elements.namedItem("email");
+        if (emailElement && emailElement.value.trim()) {
+          const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailPattern.test(emailElement.value.trim())) {
+            registerError("email", "Please enter a valid email address.");
+            hasError = true;
+          }
+        }
+
+        // Validate password with common rules
+        const passwordElement = form.elements.namedItem("password");
+        if (passwordElement && passwordElement.value.trim()) {
+          const passwordErrors = validatePassword(passwordElement.value.trim());
+          if (passwordErrors.length > 0) {
+            // Show first error message
+            registerError("password", passwordErrors[0]);
             hasError = true;
           }
         }
@@ -424,8 +370,7 @@
 
         window.__FORM_STATE__.submitted = true;
         window.__FORM_STATE__.errors = {};
-        window.__FORM_STATE__.successMessage =
-          "Form submitted successfully with normalized data!";
+        window.__FORM_STATE__.successMessage = "Account created successfully!";
         window.__FORM_STATE__.timestamp = new Date().toISOString();
 
         markSuccess(window.__FORM_STATE__.successMessage);
