@@ -151,7 +151,11 @@ class Playbook:
                 for section, ids in sections_payload.items()
             }
         next_id_value = payload.get("next_id", 0)
-        instance._next_id = int(cast(Union[int, str], next_id_value)) if next_id_value is not None else 0
+        instance._next_id = (
+            int(cast(Union[int, str], next_id_value))
+            if next_id_value is not None
+            else 0
+        )
         return instance
 
     def dumps(self) -> str:
