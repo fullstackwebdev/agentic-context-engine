@@ -120,7 +120,7 @@ python examples/playbook_persistence.py
 python examples/compare_v1_v2_prompts.py
 python examples/advanced_prompts_v2.py
 
-# Browser automation demos (requires browser-use dependencies)
+# Browser automation demos (contributors: install with `uv sync --group demos`)
 uv run python examples/browser-use/baseline_domain_checker.py    # Baseline automation
 uv run python examples/browser-use/ace_domain_checker.py         # ACE-enhanced automation
 uv run python examples/browser-use/baseline_form_filler.py       # Baseline form filling
