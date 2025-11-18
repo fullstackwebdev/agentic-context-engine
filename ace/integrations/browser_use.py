@@ -310,7 +310,7 @@ class ACEAgent:
                     # Extract state (URL, etc.)
                     if step.state:
                         step_data["url"] = step.state.url
-                        if step.state.screenshot:
+                        if hasattr(step.state, "screenshot") and step.state.screenshot:
                             step_data["has_screenshot"] = True
 
                     chronological_steps.append(step_data)
@@ -450,8 +450,11 @@ class ACEAgent:
 
         # Create GeneratorOutput (browser executed, not ACE Generator)
         # This is a "fake" output to satisfy Reflector's interface
+        # IMPORTANT: Pass full trace as reasoning so Reflector can analyze agent's thoughts
         generator_output = GeneratorOutput(
-            reasoning=f"Browser automation task: {task}",
+            reasoning=trace_info[
+                "feedback"
+            ],  # Full chronological trace with thoughts/actions/results
             final_answer=trace_info["output"],
             bullet_ids=cited_ids,  # Extracted from agent thoughts
             raw={
@@ -463,8 +466,14 @@ class ACEAgent:
             },
         )
 
-        # Use rich feedback
-        feedback = trace_info["feedback"]
+        # Build concise feedback summary (success/error context)
+        # Full trace is already in generator_output.reasoning
+        status = "succeeded" if success else "failed"
+        feedback_summary = f"Browser task {status} in {trace_info['steps']} steps"
+        if "duration_seconds" in trace_info["raw_trace"]:
+            feedback_summary += f" ({trace_info['raw_trace']['duration_seconds']}s)"
+        if error:
+            feedback_summary += f"\nError: {error}"
 
         # Run Reflector
         reflection = self.reflector.reflect(
@@ -472,7 +481,7 @@ class ACEAgent:
             generator_output=generator_output,
             playbook=self.playbook,
             ground_truth=None,
-            feedback=feedback,
+            feedback=feedback_summary,
         )
 
         # Run Curator with enriched context
@@ -481,7 +490,7 @@ class ACEAgent:
             playbook=self.playbook,
             question_context=(
                 f"task: {task}\n"
-                f"feedback: {feedback}\n"
+                f"feedback: {feedback_summary}\n"
                 f"success: {success}\n"
                 f"steps: {trace_info['steps']}\n"
                 f"duration: {trace_info['raw_trace'].get('duration_seconds', 'N/A')}s"

@@ -646,3 +646,145 @@ class TestBackwardsCompatibility:
         from ace import BROWSER_USE_AVAILABLE as imported_available
 
         assert imported_available is True
+
+    def test_trace_passed_to_reflector_in_reasoning_field(self):
+        """
+        Critical test: Verify full execution trace is passed to Reflector in reasoning field.
+
+        This test ensures that the browser execution trace (thoughts, actions, results)
+        is passed to the Reflector via GeneratorOutput.reasoning, not just a task description.
+
+        Regression test for: Initial query duplication and missing trace in reasoning field.
+        """
+        from browser_use import ChatBrowserUse
+        from unittest.mock import MagicMock, patch
+
+        agent = ACEAgent(llm=ChatBrowserUse(), ace_model="gpt-4o-mini")
+
+        # Create mock history with steps
+        mock_history = MagicMock()
+        mock_history.final_result.return_value = "Result"
+        mock_history.number_of_steps.return_value = 2
+        mock_history.total_duration_seconds.return_value = 1.5
+
+        # Mock step 1
+        mock_step1 = MagicMock()
+        mock_step1.model_output = MagicMock(
+            thinking="Step 1 thinking",
+            evaluation_previous_goal="Step 1 eval",
+            memory="Step 1 memory",
+            next_goal="Step 1 goal",
+            action=[MagicMock(model_dump=lambda: {"navigate": {"url": "test.com"}})],
+        )
+        mock_step1.result = [
+            MagicMock(
+                is_done=False,
+                success=True,
+                error=None,
+                extracted_content="navigated",
+            )
+        ]
+        mock_step1.state = MagicMock(url="https://test.com")
+
+        # Mock step 2
+        mock_step2 = MagicMock()
+        mock_step2.model_output = MagicMock(
+            thinking="Step 2 thinking",
+            evaluation_previous_goal="Step 2 eval",
+            memory="Step 2 memory",
+            next_goal="Step 2 goal",
+            action=[MagicMock(model_dump=lambda: {"done": {"text": "complete"}})],
+        )
+        mock_step2.result = [
+            MagicMock(is_done=True, success=True, error=None, extracted_content="done")
+        ]
+        mock_step2.state = MagicMock(url="https://test.com/page")
+
+        mock_history.history = [mock_step1, mock_step2]
+
+        # Capture what gets passed to Reflector
+        captured_generator_output = None
+
+        original_reflect = agent.reflector.reflect
+
+        def capture_reflect(*args, **kwargs):
+            nonlocal captured_generator_output
+            captured_generator_output = kwargs.get("generator_output")
+            # Return a mock reflection to avoid actual LLM call
+            from ace import ReflectorOutput
+
+            return ReflectorOutput(
+                reasoning="mock",
+                error_identification="none",
+                root_cause_analysis="none",
+                correct_approach="continue",
+                key_insight="test",
+                bullet_tags=[],
+                raw={},
+            )
+
+        agent.reflector.reflect = capture_reflect
+
+        # Also mock curator to avoid LLM call
+        from ace import CuratorOutput, DeltaBatch
+
+        agent.curator.curate = lambda *args, **kwargs: CuratorOutput(
+            delta=DeltaBatch(reasoning="mock", operations=[]), raw={}
+        )
+
+        # Call _learn_from_execution
+        import asyncio
+
+        asyncio.run(
+            agent._learn_from_execution(
+                task="Test task", history=mock_history, success=True
+            )
+        )
+
+        # CRITICAL ASSERTIONS
+        assert captured_generator_output is not None, "GeneratorOutput not captured"
+
+        reasoning = captured_generator_output.reasoning
+
+        # 1. Reasoning should NOT just be the task description
+        assert (
+            reasoning != "Browser automation task: Test task"
+        ), "Reasoning should not be just task description (regression: initial implementation)"
+
+        # 2. Reasoning should contain the full trace (not just summary)
+        assert len(reasoning) > 200, (
+            f"Reasoning too short ({len(reasoning)} chars). "
+            "Should contain full execution trace with thoughts/actions/results."
+        )
+
+        # 3. Reasoning should contain step-by-step execution details
+        assert (
+            "Step 1" in reasoning or "--- Step 1 ---" in reasoning
+        ), "Reasoning should contain Step 1 details"
+        assert (
+            "Step 2" in reasoning or "--- Step 2 ---" in reasoning
+        ), "Reasoning should contain Step 2 details"
+
+        # 4. Reasoning should contain agent thoughts
+        assert (
+            "Step 1 memory" in reasoning or "memory" in reasoning.lower()
+        ), "Reasoning should contain agent's memory/thoughts"
+
+        # 5. Reasoning should contain actions taken
+        assert (
+            "navigate" in reasoning or "Action" in reasoning
+        ), "Reasoning should contain actions taken"
+
+        # 6. Reasoning should contain execution results
+        assert (
+            "Result" in reasoning or "success" in reasoning.lower()
+        ), "Reasoning should contain execution results"
+
+        # 7. Verify trace structure markers are present
+        assert (
+            "BROWSER EXECUTION TRACE" in reasoning or "Step 1" in reasoning
+        ), "Reasoning should have trace structure markers"
+
+        print(
+            f"✅ Trace properly passed to Reflector: {len(reasoning)} characters with full execution details"
+        )
