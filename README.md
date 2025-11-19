@@ -160,9 +160,16 @@ uv run python examples/kayba_ace_test.py
 
 ### 🌐 Browser Automation
 
-Real-world benchmarks show ACE reduces browser automation costs by 30-50% through learned strategies.
+**Online Shopping Demo**: ACE vs baseline agent shopping for 5 grocery items.
 
-**[→ Browser Demos & Full Results](examples/browser-use/README.md)**
+![Online Shopping Demo Results](examples/browser-use/online-shopping/results-online-shopping-brwoser-use.png)
+
+**ACE Performance:**
+- **29.8% fewer steps** (57.2 vs 81.5)
+- **49.0% token reduction** (595k vs 1,166k)
+- **42.6% cost reduction** (including ACE overhead)
+
+**[→ Try it yourself & see all demos](examples/browser-use/README.md)**
 
 ---
 
