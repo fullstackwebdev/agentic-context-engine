@@ -30,7 +30,7 @@ Do you have an existing agentic system?
 │
 └─ NO → Use FULL ACE PIPELINE
     │
-    ├─ Simple tasks (Q&A, classification)? → Use SimpleAgent
+    ├─ Simple tasks (Q&A, classification)? → Use ACELiteLLM
     └─ Complex tasks (tools, workflows)? → Consider LangChain + ACELangChain
 ```
 
@@ -46,7 +46,7 @@ Do you have an existing agentic system?
 - ACE Generator executes tasks
 - Full ACE components: Playbook + Generator + Reflector + Curator
 - Use case: Building new agents from scratch
-- See: `examples/simple_agent/` or `SimpleAgent` class
+- See: `ace.integrations.ACELiteLLM` class
 
 ---
 
@@ -564,7 +564,7 @@ def _inject_context(self, task: str) -> str:
 
 ## See Also
 
-- **Out-of-box integrations:** SimpleAgent, ACEBrowserUse, ACELangChain
+- **Out-of-box integrations:** ACELiteLLM, ACEBrowserUse, ACELangChain
 - **Integration patterns:** [INTEGRATION_PATTERNS.md](INTEGRATION_PATTERNS.md)
 - **Full ACE guide:** [COMPLETE_GUIDE_TO_ACE.md](COMPLETE_GUIDE_TO_ACE.md)
 - **API reference:** [API_REFERENCE.md](API_REFERENCE.md)
