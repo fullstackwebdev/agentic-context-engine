@@ -89,7 +89,9 @@ class OpikIntegration:
                 logger.debug(f"Opik configuration skipped: {e}")
                 self.enabled = False
         elif not OPIK_AVAILABLE:
-            logger.debug("Opik not available. Install with: pip install ace-framework[observability]")
+            logger.debug(
+                "Opik not available. Install with: pip install ace-framework[observability]"
+            )
 
     def log_bullet_evolution(
         self,
