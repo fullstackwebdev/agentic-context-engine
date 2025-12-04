@@ -7,7 +7,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-![Kayba Agent Prompt Optimizer](examples/agent-prompt-optimizer/agent_prompt_optimizer.png)
+![Kayba Agent Prompt Optimizer](/agent_prompt_optimizer.png)
 
 
 ## The Problem with Traditional Prompt Engineering
