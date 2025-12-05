@@ -30,6 +30,25 @@ DEMO_DIR = Path(__file__).parent
 WORKSPACE_DIR = DEMO_DIR / "workspace"
 DATA_DIR = Path(os.getenv("ACE_DEMO_DATA_DIR", str(DEMO_DIR / ".data")))
 SKILLBOOK_PATH = DATA_DIR / "skillbooks" / "ace_typescript.json"
+PROMPT_PATH = DEMO_DIR / "prompt.md"
+
+DEFAULT_PROMPT = """Your job is to complete the task defined in the workspace.
+
+Use .agent/ directory as scratchpad for your work. Store plans and notes there.
+
+Make a commit after every logical unit of work.
+"""
+
+
+def load_prompt() -> str:
+    """Load task prompt from prompt.md or use default."""
+    if PROMPT_PATH.exists():
+        content = PROMPT_PATH.read_text()
+        # Skip the header (everything before ---)
+        if "---" in content:
+            content = content.split("---", 1)[1]
+        return content.strip()
+    return DEFAULT_PROMPT
 
 
 def get_commit_count(workspace_dir: Path) -> int:
@@ -65,7 +84,7 @@ def are_recent_commits_code_changes(workspace_dir: Path, n: int = 3) -> bool:
         return True
 
     files = [f.strip() for f in result.stdout.strip().split("\n") if f.strip()]
-    code_extensions = {".ts", ".tsx", ".js"}
+    code_extensions = {".ts", ".tsx", ".js", ".py"}
     doc_files = {"README.md", "CHANGELOG.md", "CONTRIBUTING.md", "LICENSE"}
 
     for f in files:
@@ -78,24 +97,6 @@ def are_recent_commits_code_changes(workspace_dir: Path, n: int = 3) -> bool:
         if basename not in doc_files and ext != ".md":
             return True
     return False
-
-
-def build_prompt() -> str:
-    """Build the task prompt."""
-    return """Your job is to port ACE framework (Python) to TypeScript and maintain the repository.
-
-You have access to source/ (Python) and target/ (TypeScript git repo).
-
-Make a commit after every single file edit.
-
-Use .agent/ directory as scratchpad for your work. Store long term plans and todo lists there.
-
-Key substitution: LiteLLM (Python) → Vercel AI SDK (TypeScript)
-
-The .env file contains API keys for running examples.
-
-Spend 80% of time on porting, 20% on testing. When porting is complete, improve code quality and fix any issues.
-"""
 
 
 def main():
@@ -152,7 +153,7 @@ def main():
                 break
 
         # Run Claude - let it work until done
-        prompt = build_prompt()
+        prompt = load_prompt()
         result = agent.run(task=prompt, context="")
         results.append(result)
 
