@@ -18,10 +18,9 @@ Example:
 """
 
 import json
-import os
+import queue
 import threading
 import time
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional
@@ -29,23 +28,17 @@ from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional
 import requests
 
 from ..llm_providers import LiteLLMClient
-from ..skillbook import Skillbook
-from ..roles import Reflector, SkillManager, AgentOutput
 from ..prompts_v2_1 import PromptManager
+from ..roles import AgentOutput, Reflector, SkillManager
+from ..skillbook import Skillbook
 from .base import wrap_skillbook_context
 
 if TYPE_CHECKING:
     from ..deduplication import DeduplicationConfig, DeduplicationManager
 
-from ..llm_providers import LiteLLMClient
-from ..skillbook import Skillbook
-from ..roles import Reflector, SkillManager, AgentOutput
-from ..prompts_v2_1 import PromptManager
-from .base import wrap_skillbook_context
 
-if TYPE_CHECKING:
-    from typing import TYPE_CHECKING
-    from ..deduplication import DeduplicationConfig, DeduplicationManager
+# Availability flag - requests is required for OpenCode integration
+OPENCODE_AVAILABLE = True
 
 
 @dataclass
@@ -239,9 +232,7 @@ class OpenCodeClient:
         resp.raise_for_status()
         return resp.json()
 
-    def get_message(
-        self, session_id: str, message_id: str
-    ) -> Dict[str, Any]:
+    def get_message(self, session_id: str, message_id: str) -> Dict[str, Any]:
         """
         Get a specific message.
 
@@ -277,8 +268,6 @@ class OpenCodeClient:
         Raises:
             requests.ConnectionError: If server disconnects
         """
-        import time
-
         try:
             response = self._session.get(
                 f"{self.server_url}/event",
@@ -289,17 +278,20 @@ class OpenCodeClient:
             response.raise_for_status()
 
             start_time = time.time()
-            
+
             while True:
                 # Check timeout if specified
                 if timeout_seconds and (time.time() - start_time) > timeout_seconds:
                     break
-                
+
                 try:
                     for line in response.iter_lines(chunk_size=1, decode_unicode=False):
-                        if timeout_seconds and (time.time() - start_time) > timeout_seconds:
+                        if (
+                            timeout_seconds
+                            and (time.time() - start_time) > timeout_seconds
+                        ):
                             break
-                            
+
                         if line:
                             line_text = line.decode("utf-8")
                             if line_text.startswith("data: "):
@@ -309,7 +301,10 @@ class OpenCodeClient:
                                     yield event
                                 except json.JSONDecodeError:
                                     continue
-                except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
+                except (
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.ReadTimeout,
+                ):
                     # Timeout or disconnection - check if we should continue
                     if timeout_seconds and (time.time() - start_time) > timeout_seconds:
                         break
@@ -323,16 +318,12 @@ class OpenCodeClient:
                     )
                     response.raise_for_status()
         finally:
-            if 'response' in locals():
+            if "response" in locals():
                 response.close()
 
     def close(self):
         """Close the HTTP session."""
         self._session.close()
-
-
-# Availability flag (defined here to avoid circular import)
-OPENCODE_AVAILABLE = os.environ.get("OPENCODE_SERVER_AVAILABLE", "false").lower() == "true"
 
 
 class ACEOpenCode:
@@ -437,7 +428,6 @@ class ACEOpenCode:
             self._dedup_manager = DeduplicationManager(dedup_config)
 
         # Async learning state
-        import queue
         self._learning_queue: queue.Queue = queue.Queue()
         self._learning_thread: Optional[threading.Thread] = None
         self._stop_learning = threading.Event()
@@ -526,24 +516,12 @@ class ACEOpenCode:
                 error=str(e),
             )
 
-
-
-
-
-
-
-
-
-
-
-
     def _capture_execution_trace(self, prompt: str) -> str:
         """Capture and parse execution trace from SSE events."""
-        import time
         trace_parts = []
         step_num = 0
         seen_assistant_start = False
-        
+
         # Track cumulative reasoning
         current_reasoning = ""
         last_reasoning_length = 0
@@ -563,7 +541,7 @@ class ACEOpenCode:
         for event in self.client.stream_events(timeout_seconds=self.timeout - 10):
             event_type = event.get("type")
             properties = event.get("properties", {})
-            
+
             # Less restrictive session filtering
             event_session = properties.get("info", {}).get("sessionID")
             if event_session and event_session != self._session_id:
@@ -596,12 +574,12 @@ class ACEOpenCode:
                     state = part.get("state", {})
                     status = state.get("status")
                     tool_name = part.get("tool", "unknown")
-                    
+
                     # Only capture when tool completes
                     if status == "completed":
                         step_num += 1
                         tool_input = state.get("input", {})
-                        
+
                         # Format based on tool type
                         if tool_name == "read":
                             file_path = tool_input.get("filePath", "")
@@ -617,12 +595,12 @@ class ACEOpenCode:
                             trace_parts.append(f"[Step {step_num}] Glob: {pattern}")
                         else:
                             trace_parts.append(f"[Step {step_num}] {tool_name}")
-                        
+
                         # Optionally capture output
                         output = state.get("output", "")
                         if output and len(output) < 200:
                             trace_parts.append(f"[Result] {output[:200]}")
-                    
+
                     # Capture errors
                     elif status == "error":
                         error = state.get("error", "")
@@ -634,9 +612,9 @@ class ACEOpenCode:
                 if status == "idle" and seen_assistant_start:
                     # Session completed - add final reasoning
                     if current_reasoning.strip():
-                        sentences = current_reasoning.split('. ')
+                        sentences = current_reasoning.split(". ")
                         if len(sentences) > 3:
-                            summary = '. '.join(sentences[:2] + [sentences[-1]])
+                            summary = ". ".join(sentences[:2] + [sentences[-1]])
                             trace_parts.insert(0, f"[Reasoning] {summary}")
                         else:
                             trace_parts.insert(0, f"[Reasoning] {current_reasoning}")
@@ -647,9 +625,6 @@ class ACEOpenCode:
                 break
 
         return "\n".join(trace_parts) if trace_parts else "(No trace captured)"
-
-
-
 
     def _extract_summary(self, messages: List[Dict[str, Any]]) -> str:
         """Extract final summary from messages."""
@@ -705,13 +680,6 @@ class ACEOpenCode:
             feedback=feedback,
         )
 
-        # Get similarity report for SkillManager if deduplication enabled
-        similarity_report = None
-        if self._dedup_manager:
-            similarity_report = self._dedup_manager.get_similarity_report(
-                self.skillbook
-            )
-
         # Run SkillManager
         skill_manager_output = self.skill_manager.update_skills(
             reflection=reflection,
@@ -764,8 +732,6 @@ class ACEOpenCode:
 
     def _learning_worker(self):
         """Background worker that processes learning tasks."""
-        import queue
-
         while not self._stop_learning.is_set():
             try:
                 # Wait for a task with timeout to allow checking stop flag
@@ -794,8 +760,6 @@ class ACEOpenCode:
             return True
 
         try:
-            import time
-
             if timeout is not None:
                 start = time.time()
                 while not self._learning_queue.empty():
@@ -838,8 +802,6 @@ class ACEOpenCode:
         with self._lock:
             submitted = self._tasks_submitted
             completed = self._tasks_completed
-
-        import queue
 
         return {
             "async_learning": self.async_learning,
